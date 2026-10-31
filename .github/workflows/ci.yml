@@ -1,0 +1,47 @@
+name: Kaggle Bridge CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: server/requirements.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r server/requirements.txt pytest
+      - name: Compile Python
+        run: python -m compileall -q server
+      - name: Run authentication tests
+        working-directory: server
+        run: pytest -q
+      - name: Verify required MCP tools
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+          tree = ast.parse(Path("server/server.py").read_text())
+          tools = {n.name for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and any(isinstance(d, ast.Call) and getattr(d.func, "attr", "") == "tool" for d in n.decorator_list)}
+          required = {"kaggle_status", "search_datasets", "download_dataset", "search_competitions", "download_competition_data", "create_notebook", "run_notebook", "inspect_submission", "submit_competition_entry"}
+          missing = required - tools
+          assert not missing, f"Missing MCP tools: {sorted(missing)}"
+          print(f"Verified {len(required)} MCP tools")
+          PY
+      - name: Build Docker image
+        run: docker build -t kaggle-bridge:ci ./server
