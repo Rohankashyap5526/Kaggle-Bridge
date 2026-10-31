@@ -2,7 +2,7 @@ services:
   - type: web
     name: kaggle-bridge
     runtime: docker
-    plan: starter
+    plan: free
     dockerfilePath: ./server/Dockerfile
     dockerContext: ./server
     healthCheckPath: /healthz
@@ -16,8 +16,4 @@ services:
       - key: MCP_AUTH_TOKEN
         generateValue: true
       - key: KAGGLE_BRIDGE_DATA_DIR
-        value: /data
-    disk:
-      name: kaggle-bridge-data
-      mountPath: /data
-      sizeGB: 10
+        value: /tmp/kaggle-bridge-data
