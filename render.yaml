@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: kaggle-bridge
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: ./server
+    healthCheckPath: /healthz
+    envVars:
+      - key: MCP_TRANSPORT
+        value: streamable-http
+      - key: KAGGLE_USERNAME
+        sync: false
+      - key: KAGGLE_KEY
+        sync: false
+      - key: MCP_AUTH_TOKEN
+        generateValue: true
+      - key: KAGGLE_BRIDGE_DATA_DIR
+        value: /data
+    disk:
+      name: kaggle-bridge-data
+      mountPath: /data
+      sizeGB: 10
